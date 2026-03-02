@@ -3,10 +3,9 @@ generator client {
 }
 
 datasource db {
-  // LOCAL DEV  : sqlite  (zero config — runs immediately)
-  // PRODUCTION : change provider to "postgresql" and set DATABASE_URL to your Neon/Supabase URL
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // NOTE: SQLite doesn't support enums.
