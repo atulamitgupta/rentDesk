@@ -42,9 +42,20 @@ app.use(express.urlencoded({ extended: true }));
 // =============================================================
 //  HEALTH CHECK  (no auth needed)
 // =============================================================
-app.get('/api/health', (_, res) =>
-  res.json({ status: 'ok', ts: new Date().toISOString() })
-);
+app.get('/api/health', async (_, res) => {
+  let dbStatus = 'unknown';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'connected';
+  } catch (e) {
+    dbStatus = 'failed: ' + e.message;
+  }
+  res.json({
+    status: 'ok',
+    database: dbStatus,
+    ts: new Date().toISOString()
+  });
+});
 
 // =============================================================
 //  AUTH ROUTES (no auth middleware — these ARE the auth routes)
@@ -224,8 +235,8 @@ app.listen(PORT, async () => {
     console.log('  ✅  Rent engine scheduler running');
     console.log('  ℹ   WhatsApp: lazy-loaded on first /api/whatsapp request\n');
   } catch (e) {
-    console.error('  ❌  DB connection failed:', e.message);
-    process.exit(1);
+    console.error('  ❌  DB connection failed during startup:', e.message);
+    console.log('  ⚠️  Server will stay alive to respond to health checks, but DB operations will fail.');
   }
 });
 
