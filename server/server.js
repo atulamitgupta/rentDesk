@@ -196,12 +196,12 @@ app.use((err, _req, res, _next) => {
 //  START SERVER
 // =============================================================
 const PORT = parseInt(process.env.PORT || '5000', 10);
-
 app.listen(PORT, async () => {
+  const dbType = process.env.DATABASE_URL?.includes('postgres') ? 'PostgreSQL' : 'SQLite (local)';
   console.log(`
 ╔══════════════════════════════════════════════╗
 ║  Cloud Bass Rent Management — API Server     ║
-║  Port: ${PORT}  |  DB: SQLite (local dev)       ║
+║  Port: ${PORT}  |  DB: ${dbType}               ║
 ╚══════════════════════════════════════════════╝
 `);
   try {
