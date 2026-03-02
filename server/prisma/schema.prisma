@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // LOCAL DEV  : sqlite  (zero config — runs immediately)
+  // PRODUCTION : change provider to "postgresql" and set DATABASE_URL to your Neon/Supabase URL
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: SQLite doesn't support enums.
+// Enum values are enforced at the application layer (Express routes).
+// Valid values are documented as comments below each String field.
+
+model Landlord {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  password_hash String
+  full_name     String
+  phone         String?
+  whatsapp_no   String?
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+  properties    Property[]
+  expenses      Expense[]
+
+  @@map("landlords")
+}
+
+model Property {
+  id          String      @id @default(uuid())
+  landlord_id String
+  name        String
+  address     String
+  city        String
+  state       String?
+  pincode     String?
+  type        String      @default("RESIDENTIAL")  // RESIDENTIAL | COMMERCIAL | MIXED
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  landlord    Landlord    @relation(fields: [landlord_id], references: [id], onDelete: Cascade)
+  units       Unit[]
+  expenses    Expense[]
+
+  @@index([landlord_id])
+  @@map("properties")
+}
+
+model Unit {
+  id            String        @id @default(uuid())
+  property_id   String
+  unit_number   String
+  floor         String?
+  monthly_rent  Float
+  status        String        @default("VACANT")   // OCCUPIED | VACANT
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  property      Property      @relation(fields: [property_id], references: [id], onDelete: Cascade)
+  tenant        Tenant?
+  rent_payments RentPayment[]
+
+  @@index([property_id])
+  @@index([status])
+  @@map("units")
+}
+
+model Tenant {
+  id               String        @id @default(uuid())
+  unit_id          String        @unique
+  full_name        String
+  phone            String
+  whatsapp_no      String?
+  email            String?
+  move_in_date     DateTime
+  security_deposit Float         @default(0)
+  is_active        Boolean       @default(true)
+  notes            String?
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  unit             Unit          @relation(fields: [unit_id], references: [id], onDelete: Restrict)
+  rent_payments    RentPayment[]
+
+  @@index([unit_id])
+  @@index([is_active])
+  @@map("tenants")
+}
+
+model RentPayment {
+  id               String      @id @default(uuid())
+  unit_id          String
+  tenant_id        String
+  rent_month       DateTime
+  amount_due       Float
+  amount_paid      Float       @default(0)
+  balance_due      Float       @default(0)      // amount_due - amount_paid (updated on each partial)
+  due_date         DateTime
+  payment_date     DateTime?
+  status           String      @default("PENDING")  // PENDING | PARTIAL | PAID | OVERDUE | WAIVED
+  payment_note     String?
+  reminder_sent    Boolean     @default(false)
+  reminder_sent_at DateTime?
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+  unit             Unit        @relation(fields: [unit_id], references: [id], onDelete: Restrict)
+  tenant           Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([unit_id, rent_month])
+  @@index([tenant_id])
+  @@index([status])
+  @@index([rent_month])
+  @@map("rent_payments")
+}
+
+// =============================================================
+//  Expense — track property costs that reduce net profit
+//  Categories: MAINTENANCE | UTILITY | TAX | INSURANCE | OTHER
+// =============================================================
+model Expense {
+  id           String    @id @default(uuid())
+  landlord_id  String
+  property_id  String?                              // null = general expense
+  description  String
+  amount       Float
+  category     String    @default("OTHER")          // MAINTENANCE | UTILITY | TAX | INSURANCE | OTHER
+  expense_date DateTime  @default(now())
+  notes        String?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  landlord     Landlord  @relation(fields: [landlord_id], references: [id], onDelete: Cascade)
+  property     Property? @relation(fields: [property_id], references: [id], onDelete: SetNull)
+
+  @@index([landlord_id])
+  @@index([property_id])
+  @@index([expense_date])
+  @@index([category])
+  @@map("expenses")
+}
