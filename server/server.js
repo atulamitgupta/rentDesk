@@ -33,7 +33,11 @@ export const prisma = new PrismaClient({
 const app = express();
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:5173',
+    'https://client-kappa-bice.vercel.app',
+    'https://client-kapvpa-bice.vercel.app'
+  ],
   credentials: true,
 }));
 app.use(express.json());

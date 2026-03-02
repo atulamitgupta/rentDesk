@@ -11,7 +11,7 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://rentdesk-production.up.railway.app/api',
     headers: { 'Content-Type': 'application/json' },
     timeout: 15000, // 15 seconds — accommodates slow free-tier servers
 });
@@ -34,7 +34,7 @@ axiosClient.interceptors.response.use(
     (error) => {
         // Only redirect on 401 if it's NOT a login attempt
         const isLoginAttempt = error.config?.url?.includes('/auth/login');
-        
+
         if (error.response?.status === 401 && !isLoginAttempt) {
             // Token expired or invalid — clear storage and force login
             localStorage.removeItem('rentdesk_token');
