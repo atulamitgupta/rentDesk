@@ -19,6 +19,7 @@ model Landlord {
   full_name     String
   phone         String?
   whatsapp_no   String?
+  role          String      @default("owner") // founder | owner
   created_at    DateTime    @default(now())
   updated_at    DateTime    @updatedAt
   properties    Property[]

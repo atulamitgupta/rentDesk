@@ -24,7 +24,7 @@ import {
 
 import {
     Routes, Route, Navigate,
-    useNavigate, useLocation, Link
+    useNavigate, useLocation, Link, Outlet
 } from 'react-router-dom';
 import { Building2, Menu, Bell, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -74,46 +74,65 @@ const PageLoader = () => (
 // =============================================================
 //  PRIVATE ROUTE GUARD
 // =============================================================
-function PrivateRoute({ children }) {
+// ── PRIVATE ROUTE GUARD ─────────────────────────────────────────
+function PrivateRoute() {
     const { isAuth } = useAuth();
-    return isAuth ? children : <Navigate to="/login" replace />;
+    const location = useLocation();
+    return isAuth ? <Outlet /> : <Navigate to="/login" state={{ from: location }} replace />;
 }
 
-// =============================================================
-//  LOGIN PAGE
-// =============================================================
+// ── LOGIN PAGE ──────────────────────────────────────────────────
 function LoginPage() {
-    const { login, isAuth } = useAuth();
+    const { login, isAuth, landlord } = useAuth();
     const navigate = useNavigate();
     const [form, setForm] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    if (isAuth) return <Navigate to="/dashboard" replace />;
+    if (isAuth) {
+        const target = landlord?.role === 'founder' ? '/master-control' : '/dashboard';
+        return <Navigate to={target} replace />;
+    }
 
     const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
         setLoading(true);
+        setError('');
+
         try {
-            const res = await authApi.login(form);
-            login(res.data.token, res.data.landlord);
-            toast.success(`Welcome back, Founder! 👋`);
-            const target = res.data.landlord.email.toLowerCase() === 'founder@rentdesk.in'
-                ? '/master-control'
-                : '/dashboard';
-            navigate(target, { replace: true });
+            // Normalization on frontend as well
+            const credentials = {
+                email: form.email.trim().toLowerCase(),
+                password: form.password
+            };
+
+            const response = await authApi.login(credentials);
+            const { success, token, landlord, message } = response.data;
+
+            if (success && token && landlord) {
+                login(token, landlord);
+                // The useEffect/Navigate will handle the redirect automatically
+                // But we'll navigate explicitly for immediate feedback
+                const target = landlord.role === 'founder' ? '/master-control' : '/dashboard';
+                toast.success('Successfully logged in');
+                navigate(target, { replace: true });
+            } else {
+                setError(message || 'Authentication failed. Please verify your credentials.');
+            }
         } catch (err) {
-            setError(err.response?.data?.message || 'Invalid email or password. Try again.');
+            console.error('[Login Error]:', err);
+            const errMsg = err.response?.data?.message || 'Connection failure. Please ensure the server is running.';
+            setError(errMsg);
+            toast.error(errMsg);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#F8F8F7] flex flex-col items-center justify-center px-4 py-12">
+        <div className="min-h-screen bg-[#F8F8F7] flex flex-col items-center justify-center p-6 animate-in fade-in duration-500">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 mb-10">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-sm">
@@ -174,10 +193,10 @@ function LoginPage() {
                     </button>
                 </form>
 
-                <p className="text-center text-xs text-slate-400 mt-6">
-                    Demo: <span className="font-semibold text-slate-600">founder@rentdesk.in</span>
-                    {' / '}
-                    <span className="font-semibold text-slate-600">Admin@123</span>
+                <p className="text-center text-xs text-slate-400 mt-6 font-medium">
+                    Admin: <span className="font-bold text-slate-600">admin@rentdesk.in</span> |
+                    Owner: <span className="font-bold text-slate-600">owner@rentdesk.in</span>
+                    <br /> Password: <span className="font-semibold text-slate-600">Admin@123</span>
                 </p>
             </div>
 
@@ -191,7 +210,7 @@ function LoginPage() {
 // =============================================================
 //  TOP BAR — shown inside the protected layout
 // =============================================================
-function TopBar({ onMenuClick }) {
+function TopBar() {
     const { logout, landlord } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -304,10 +323,10 @@ function AppLayout({ children }) {
                 />
             )}
 
-            {/* ── Sidebar — fixed height but works with page flow ── */}
+            {/* ── Sidebar ── */}
             <div className={`
                 fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out
-                lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:flex lg:shrink-0
+                lg:relative lg:translate-x-0 lg:flex lg:shrink-0
                 ${sideOpen ? 'translate-x-0' : '-translate-x-full'}
             `}>
                 <Sidebar onClose={() => setSideOpen(false)} />
@@ -321,7 +340,7 @@ function AppLayout({ children }) {
                 {/* Content area stretches with the page */}
                 <main className="flex-1">
                     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-20 md:pb-6">
-                        {children}
+                        <Outlet />
                     </div>
                 </main>
 
@@ -333,16 +352,22 @@ function AppLayout({ children }) {
     );
 }
 
+// ── APP LAYOUT WRAPPERS ──────────────────────────────────────
+const StandardLayoutWrapper = () => (
+    <AppLayout />
+);
 
-// =============================================================
-//  ROOT APP — ROUTES
-// =============================================================
+const FounderLayoutWrapper = () => (
+    <FounderLayout />
+);
+
+// ── ROOT APP ────────────────────────────────────────────────────
 export default function App() {
     return (
         <AuthProvider>
             <Suspense fallback={<PageLoader />}>
                 <Routes>
-                    {/* Public routes */}
+                    {/* Public Routes */}
                     <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/about" element={<AboutUs />} />
@@ -352,37 +377,28 @@ export default function App() {
                     <Route path="/receipt" element={<PublicReceipt />} />
                     <Route path="/tools" element={<LegalHub />} />
 
-                    {/* Protected routes — all wrapped in AppLayout */}
-                    {[
-                        { path: '/dashboard', element: <Dashboard /> },
-                        { path: '/properties', element: <Properties /> },
-                        { path: '/tenants', element: <Tenants /> },
-                        { path: '/payments', element: <RentLedger /> },
-                        { path: '/expenses', element: <Expenses /> },
-                        { path: '/maintenance', element: <Maintenance /> },
-                        { path: '/broadcast', element: <Broadcast /> },
-                        { path: '/income-stats', element: <IncomeStats /> },
-                        { path: '/settings', element: <Settings /> },
-                        { path: '/refer-earn', element: <ReferEarn /> },
-                        { path: '/super-admin', element: <SuperAdminDashboard /> },
-                    ].map((route) => (
-                        <Route
-                            key={route.path}
-                            path={route.path}
-                            element={<PrivateRoute><AppLayout>{route.element}</AppLayout></PrivateRoute>}
-                        />
-                    ))}
+                    {/* Private Routes */}
+                    <Route element={<PrivateRoute />}>
+                        {/* Standard Landlord Dashboard Routes */}
+                        <Route element={<StandardLayoutWrapper />}>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/properties" element={<Properties />} />
+                            <Route path="/tenants" element={<Tenants />} />
+                            <Route path="/payments" element={<RentLedger />} />
+                            <Route path="/expenses" element={<Expenses />} />
+                            <Route path="/maintenance" element={<Maintenance />} />
+                            <Route path="/broadcast" element={<Broadcast />} />
+                            <Route path="/income-stats" element={<IncomeStats />} />
+                            <Route path="/settings" element={<Settings />} />
+                            <Route path="/refer-earn" element={<ReferEarn />} />
+                            <Route path="/super-admin" element={<SuperAdminDashboard />} />
+                        </Route>
 
-                    <Route
-                        path="/master-control/*"
-                        element={
-                            <PrivateRoute>
-                                <FounderLayout>
-                                    <FounderPortalComponent />
-                                </FounderLayout>
-                            </PrivateRoute>
-                        }
-                    />
+                        {/* Exclusive Founder Portal Routes */}
+                        <Route path="/master-control/*" element={<FounderLayoutWrapper />}>
+                            <Route path="*" element={<FounderPortalComponent />} />
+                        </Route>
+                    </Route>
 
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />

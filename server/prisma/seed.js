@@ -20,26 +20,34 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('\n[Seed] Starting database seed...\n');
 
-    // ── 1. Create or update the default landlord ────────────────
-    const email = process.env.SEED_EMAIL || 'founder@rentdesk.in';
+    // ── 1. Create or update authorized founder accounts ────────
+    const authorizedUsers = [
+        { email: 'admin@rentdesk.in', name: 'Cloud Bass Admin', role: 'founder' },
+        { email: 'owner@rentdesk.in', name: 'Test Landlord', role: 'owner' },
+    ];
     const password = process.env.SEED_PASSWORD || 'Admin@123';
-    const name = process.env.SEED_NAME || 'Cloud Bass Founder';
-
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const landlord = await prisma.landlord.upsert({
-        where: { email },
-        update: { password_hash: passwordHash, full_name: name },
-        create: {
-            email,
-            password_hash: passwordHash,
-            full_name: name,
-            phone: '9876543210',
-            whatsapp_no: '9876543210',
-        },
-    });
+    let mainLandlord = null;
 
-    console.log(`[Seed] ✅ Landlord: ${landlord.full_name} (${landlord.email})`);
+    for (const user of authorizedUsers) {
+        const landlord = await prisma.landlord.upsert({
+            where: { email: user.email },
+            update: { password_hash: passwordHash, full_name: user.name, role: user.role },
+            create: {
+                email: user.email,
+                password_hash: passwordHash,
+                full_name: user.name,
+                role: user.role,
+                phone: '9876543210',
+                whatsapp_no: '9876543210',
+            },
+        });
+        console.log(`[Seed] ✅ Landlord created: ${landlord.full_name} (${landlord.email})`);
+        if (!mainLandlord) mainLandlord = landlord;
+    }
+
+    const landlord = mainLandlord;
 
     // ── 2. Create a sample property ─────────────────────────────
     const property = await prisma.property.upsert({
@@ -140,7 +148,7 @@ async function main() {
     console.log(`[Seed] ✅ Rent Payments: ${paymentsData.length} created for March 2026`);
 
     console.log('\n[Seed] 🎉 Database seeded successfully!');
-    console.log(`[Seed]    Login: ${email} / ${password}\n`);
+    console.log(`[Seed]    Login: ${landlord.email} / ${password}\n`);
 }
 
 main()

@@ -57,20 +57,33 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ success: false, message: 'Email and password required.' });
 
-    const landlord = await prisma.landlord.findUnique({ where: { email: email.trim().toLowerCase() } });
-    if (!landlord || !(await bcrypt.compare(password, landlord.password_hash)))
-      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    // 1. Normalization: Always trim and lowercase
+    const normalizedEmail = email.trim().toLowerCase();
 
+    // 2. Database Query: Check for correct email
+    const landlord = await prisma.landlord.findUnique({ where: { email: normalizedEmail } });
+    if (!landlord) {
+      return res.status(401).json({ success: false, message: 'Incorrect Email ID. Please check and try again.' });
+    }
+
+    // 3. Password Verification
+    const isMatched = await bcrypt.compare(password, landlord.password_hash);
+    if (!isMatched) {
+      return res.status(401).json({ success: false, message: 'Invalid password. Try again.' });
+    }
+
+    // 4. Session/JWT Fix: Include user_role
     const token = jwt.sign(
-      { id: landlord.id, email: landlord.email },
+      { id: landlord.id, email: landlord.email, role: landlord.role || 'owner' },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
+
     const { password_hash, ...safe } = landlord;
     return res.json({ success: true, token, landlord: safe });
   } catch (e) {
     console.error('[POST /auth/login]', e.message);
-    return res.status(500).json({ success: false, message: e.message });
+    return res.status(500).json({ success: false, message: 'Internal Server error. Please contact founder.' });
   }
 });
 

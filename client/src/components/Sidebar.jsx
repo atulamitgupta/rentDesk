@@ -63,7 +63,7 @@ export default function Sidebar({ onClose }) {
     };
 
     return (
-        <aside className="flex flex-col min-h-screen w-64 bg-[#F8F8F7] border-r border-orange-100 shrink-0 z-50">
+        <aside className="flex flex-col w-64 bg-[#F8F8F7] border-r border-orange-100 shrink-0 z-50">
 
             {/* ── Brand Identity ───────────────────────────────────── */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-orange-100 shrink-0">

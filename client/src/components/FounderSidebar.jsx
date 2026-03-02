@@ -49,7 +49,7 @@ export default function FounderSidebar({ onClose }) {
     const navigate = useNavigate();
 
     return (
-        <aside className="flex flex-col h-full w-64 bg-[#F1F1EF] border-r border-orange-100 shrink-0 z-50">
+        <aside className="flex flex-col w-64 bg-[#F1F1EF] border-r border-orange-100 shrink-0 z-50">
 
             {/* ── Founder Executive Badge ─────────────────────────── */}
             <div className="px-6 py-8 border-b border-orange-100/50">
@@ -70,7 +70,7 @@ export default function FounderSidebar({ onClose }) {
             </div>
 
             {/* ── Navigation ─────────────────────────────────────── */}
-            <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto custom-scrollbar">
+            <nav className="flex-1 px-4 py-6 space-y-8">
                 {FOUNDER_NAV.map((section) => (
                     <div key={section.title} className="space-y-2">
                         <h3 className="px-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
@@ -108,28 +108,6 @@ export default function FounderSidebar({ onClose }) {
                     </div>
                 ))}
             </nav>
-
-            {/* ── System Access ─────────────────────────────────── */}
-            <div className="p-4 space-y-2 border-t border-orange-100/50">
-                <button
-                    onClick={() => navigate('/dashboard')}
-                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-[12px] font-black text-orange-600 bg-orange-50 hover:bg-orange-100 transition-all active:scale-95 border border-orange-100"
-                >
-                    <LogOut size={16} className="rotate-180" />
-                    <span>Switch to My PG</span>
-                </button>
-                <button
-                    onClick={() => {
-                        localStorage.removeItem('rentdesk_token');
-                        localStorage.removeItem('rentdesk_user');
-                        navigate('/login');
-                        toast.success('Session Terminated Safely');
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black text-slate-400 hover:text-red-500 transition-all uppercase tracking-widest"
-                >
-                    Terminate Session
-                </button>
-            </div>
 
         </aside>
     );

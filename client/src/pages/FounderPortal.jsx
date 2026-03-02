@@ -155,7 +155,7 @@ function FounderOverview() {
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Landlord</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Type</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Access</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Control</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -192,10 +192,10 @@ function FounderOverview() {
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 <button
-                                                    onClick={() => toast.success(`Switching to ${owner.name}'s account...`)}
+                                                    onClick={() => toast.success(`Impersonating ${owner.name}... Redirecting to owner dashboard.`)}
                                                     className="px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-slate-200 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all flex items-center gap-2 ml-auto"
                                                 >
-                                                    <LogIn size={14} /> Portal
+                                                    <LogIn size={14} /> Login as User
                                                 </button>
                                             </td>
                                         </tr>
@@ -222,18 +222,26 @@ function FounderOverview() {
                                             {owner.status}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => toast.success(`Calling ${owner.name}...`)}
+                                                className="flex-1 bg-slate-50 text-slate-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-100 flex items-center justify-center gap-2"
+                                            >
+                                                <Search size={14} /> Call Owner
+                                            </button>
+                                            <button
+                                                onClick={() => toggleStatus(owner.id)}
+                                                className="flex-1 bg-orange-500 text-white py-3 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-orange-100 flex items-center justify-center gap-2"
+                                            >
+                                                <ShieldCheck size={14} /> {owner.status === 'Verified' ? 'Unverify' : 'Verify'}
+                                            </button>
+                                        </div>
                                         <button
-                                            onClick={() => toast.success(`Calling ${owner.name}...`)}
-                                            className="flex-1 bg-slate-50 text-slate-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-100 flex items-center justify-center gap-2"
+                                            onClick={() => toast.success(`Impersonating ${owner.name}... Redirecting.`)}
+                                            className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-2"
                                         >
-                                            <Search size={14} /> Call Owner
-                                        </button>
-                                        <button
-                                            onClick={() => toggleStatus(owner.id)}
-                                            className="flex-1 bg-orange-500 text-white py-3 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-orange-100 flex items-center justify-center gap-2"
-                                        >
-                                            <ShieldCheck size={14} /> {owner.status === 'Verified' ? 'Unverify' : 'Verify'}
+                                            <LogIn size={14} /> Login as User
                                         </button>
                                     </div>
                                 </div>
